@@ -26,20 +26,20 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 /*
-* quadrotor motion controller:
-*
-* This software is a motion control gazebo plugin for the Ardrone simulator
-*
-* change:
-* 1. Noise is add to the callback function: VelocityCallback
-* 2. Create a subscriber for rostopic /ardrone/navdata
-* 3. An additional force and torque calculation is added base on the robot state information in /ardrone/navdata 
-*
-* Created on: Oct 22, 2012
-* Author: Hongrong huang
-*
-*
-*/
+ * quadrotor motion controller:
+ *
+ * This software is a motion control gazebo plugin for the Ardrone simulator
+ *
+ * change:
+ * 1. Noise is add to the callback function: VelocityCallback
+ * 2. Create a subscriber for rostopic /ardrone/navdata
+ * 3. An additional force and torque calculation is added base on the robot state information in /ardrone/navdata 
+ *
+ * Created on: Oct 22, 2012
+ * Author: Hongrong huang
+ *
+ *
+ */
 #include <hector_quadrotor_controller/quadrotor_simple_controller.h>
 #include "gazebo/common/Events.hh"
 #include "gazebo/physics/physics.hh"
@@ -47,7 +47,8 @@
 #include <cmath>
 #include <stdlib.h>
 
-namespace gazebo {
+namespace gazebo
+{
 
 GazeboQuadrotorSimpleController::GazeboQuadrotorSimpleController()
 {
@@ -101,7 +102,8 @@ void GazeboQuadrotorSimpleController::Load(physics::ModelPtr _model, sdf::Elemen
     link = _model->GetLink();
     link_name_ = link->GetName();
   }
-  else {
+  else
+  {
     link_name_ = _sdf->GetElement("bodyName")->Get<std::string>();
     link = boost::dynamic_pointer_cast<physics::Link>(world->GetEntity(link_name_));
   }
@@ -117,7 +119,6 @@ void GazeboQuadrotorSimpleController::Load(physics::ModelPtr _model, sdf::Elemen
   else
     max_force_ = _sdf->GetElement("maxForce")->Get<double>();
 
-
   if (!_sdf->HasElement("motionSmallNoise"))
     motion_small_noise_ = 0;
   else
@@ -132,7 +133,6 @@ void GazeboQuadrotorSimpleController::Load(physics::ModelPtr _model, sdf::Elemen
     motion_drift_noise_time_ = 1.0;
   else
     motion_drift_noise_time_ = _sdf->GetElement("motionDriftNoiseTime")->Get<double>();
-
 
   controllers_.roll.Load(_sdf, "rollpitch");
   controllers_.pitch.Load(_sdf, "rollpitch");
@@ -151,9 +151,8 @@ void GazeboQuadrotorSimpleController::Load(physics::ModelPtr _model, sdf::Elemen
   if (!velocity_topic_.empty())
   {
     ros::SubscribeOptions ops = ros::SubscribeOptions::create<geometry_msgs::Twist>(
-      velocity_topic_, 1,
-      boost::bind(&GazeboQuadrotorSimpleController::VelocityCallback, this, _1),
-      ros::VoidPtr(), &callback_queue_);
+        velocity_topic_, 1, boost::bind(&GazeboQuadrotorSimpleController::VelocityCallback, this, _1), ros::VoidPtr(),
+        &callback_queue_);
     velocity_subscriber_ = node_handle_->subscribe(ops);
   }
 
@@ -161,40 +160,38 @@ void GazeboQuadrotorSimpleController::Load(physics::ModelPtr _model, sdf::Elemen
   if (!navdata_topic_.empty())
   {
     ros::SubscribeOptions ops = ros::SubscribeOptions::create<ardrone_autonomy::Navdata>(
-      navdata_topic_, 1,
-      boost::bind(&GazeboQuadrotorSimpleController::NavdataCallback, this, _1),
-      ros::VoidPtr(), &callback_queue_);
+        navdata_topic_, 1, boost::bind(&GazeboQuadrotorSimpleController::NavdataCallback, this, _1), ros::VoidPtr(),
+        &callback_queue_);
     navdata_subscriber_ = node_handle_->subscribe(ops);
   }
-    //m_navdataPub = node_handle_->advertise< ardrone_autonomy::Navdata >( "/ardrone/navdata", 10 );
-
+  //m_navdataPub = node_handle_->advertise< ardrone_autonomy::Navdata >( "/ardrone/navdata", 10 );
 
   // subscribe imu
   if (!imu_topic_.empty())
   {
     ros::SubscribeOptions ops = ros::SubscribeOptions::create<sensor_msgs::Imu>(
-      imu_topic_, 1,
-      boost::bind(&GazeboQuadrotorSimpleController::ImuCallback, this, _1),
-      ros::VoidPtr(), &callback_queue_);
+        imu_topic_, 1, boost::bind(&GazeboQuadrotorSimpleController::ImuCallback, this, _1), ros::VoidPtr(),
+        &callback_queue_);
     imu_subscriber_ = node_handle_->subscribe(ops);
 
-    ROS_INFO_NAMED("quadrotor_simple_controller", "Using imu information on topic %s as source of orientation and angular velocity.", imu_topic_.c_str());
+    ROS_INFO_NAMED("quadrotor_simple_controller",
+                   "Using imu information on topic %s as source of orientation and angular velocity.",
+                   imu_topic_.c_str());
   }
 
   // subscribe state
   if (!state_topic_.empty())
   {
     ros::SubscribeOptions ops = ros::SubscribeOptions::create<nav_msgs::Odometry>(
-      state_topic_, 1,
-      boost::bind(&GazeboQuadrotorSimpleController::StateCallback, this, _1),
-      ros::VoidPtr(), &callback_queue_);
+        state_topic_, 1, boost::bind(&GazeboQuadrotorSimpleController::StateCallback, this, _1), ros::VoidPtr(),
+        &callback_queue_);
     state_subscriber_ = node_handle_->subscribe(ops);
 
-    ROS_INFO_NAMED("quadrotor_simple_controller", "Using state information on topic %s as source of state information.", state_topic_.c_str());
+    ROS_INFO_NAMED("quadrotor_simple_controller", "Using state information on topic %s as source of state information.",
+                   state_topic_.c_str());
   }
 
   // callback_queue_thread_ = boost::thread( boost::bind( &GazeboQuadrotorSimpleController::CallbackQueueThread,this ) );
-
 
   Reset();
 
@@ -211,7 +208,6 @@ void GazeboQuadrotorSimpleController::VelocityCallback(const geometry_msgs::Twis
 {
   velocity_command_ = *velocity;
 
-
   static common::Time last_sim_time = world->GetSimTime();
   static double time_counter_for_drift_noise = 0;
   static double drift_noise[4] = {0.0, 0.0, 0.0, 0.0};
@@ -222,20 +218,20 @@ void GazeboQuadrotorSimpleController::VelocityCallback(const geometry_msgs::Twis
   last_sim_time = cur_sim_time;
 
   // generate noise
-  if(time_counter_for_drift_noise > motion_drift_noise_time_)
+  if (time_counter_for_drift_noise > motion_drift_noise_time_)
   {
-    drift_noise[0] = 2*motion_drift_noise_*(drand48()-0.5);
-    drift_noise[1] = 2*motion_drift_noise_*(drand48()-0.5);
-    drift_noise[2] = 2*motion_drift_noise_*(drand48()-0.5);
-    drift_noise[3] = 2*motion_drift_noise_*(drand48()-0.5);
+    drift_noise[0] = 2 * motion_drift_noise_ * (drand48() - 0.5);
+    drift_noise[1] = 2 * motion_drift_noise_ * (drand48() - 0.5);
+    drift_noise[2] = 2 * motion_drift_noise_ * (drand48() - 0.5);
+    drift_noise[3] = 2 * motion_drift_noise_ * (drand48() - 0.5);
     time_counter_for_drift_noise = 0.0;
   }
   time_counter_for_drift_noise += dt;
 
-  velocity_command_.linear.x += drift_noise[0] + 2*motion_small_noise_*(drand48()-0.5);
-  velocity_command_.linear.y += drift_noise[1] + 2*motion_small_noise_*(drand48()-0.5);
-  velocity_command_.linear.z += drift_noise[2] + 2*motion_small_noise_*(drand48()-0.5);
-  velocity_command_.angular.z += drift_noise[3] + 2*motion_small_noise_*(drand48()-0.5);
+  velocity_command_.linear.x += drift_noise[0] + 2 * motion_small_noise_ * (drand48() - 0.5);
+  velocity_command_.linear.y += drift_noise[1] + 2 * motion_small_noise_ * (drand48() - 0.5);
+  velocity_command_.linear.z += drift_noise[2] + 2 * motion_small_noise_ * (drand48() - 0.5);
+  velocity_command_.angular.z += drift_noise[3] + 2 * motion_small_noise_ * (drand48() - 0.5);
 //  velocity_command_.angular.z *= 2;
 
 }
@@ -244,16 +240,19 @@ void GazeboQuadrotorSimpleController::ImuCallback(const sensor_msgs::ImuConstPtr
 {
   pose.rot.Set(imu->orientation.w, imu->orientation.x, imu->orientation.y, imu->orientation.z);
   euler = pose.rot.GetAsEuler();
-  angular_velocity = pose.rot.RotateVector(math::Vector3(imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z));
+  angular_velocity = pose.rot.RotateVector(
+      math::Vector3(imu->angular_velocity.x, imu->angular_velocity.y, imu->angular_velocity.z));
 }
 
 void GazeboQuadrotorSimpleController::StateCallback(const nav_msgs::OdometryConstPtr& state)
 {
   math::Vector3 velocity1(velocity);
 
-  if (imu_topic_.empty()) {
+  if (imu_topic_.empty())
+  {
     pose.pos.Set(state->pose.pose.position.x, state->pose.pose.position.y, state->pose.pose.position.z);
-    pose.rot.Set(state->pose.pose.orientation.w, state->pose.pose.orientation.x, state->pose.pose.orientation.y, state->pose.pose.orientation.z);
+    pose.rot.Set(state->pose.pose.orientation.w, state->pose.pose.orientation.x, state->pose.pose.orientation.y,
+                 state->pose.pose.orientation.z);
     euler = pose.rot.GetAsEuler();
     angular_velocity.Set(state->twist.twist.angular.x, state->twist.twist.angular.y, state->twist.twist.angular.z);
   }
@@ -263,9 +262,12 @@ void GazeboQuadrotorSimpleController::StateCallback(const nav_msgs::OdometryCons
   // calculate acceleration
   double dt = !state_stamp.isZero() ? (state->header.stamp - state_stamp).toSec() : 0.0;
   state_stamp = state->header.stamp;
-  if (dt > 0.0) {
+  if (dt > 0.0)
+  {
     acceleration = (velocity - velocity1) / dt;
-  } else {
+  }
+  else
+  {
     acceleration.Set();
   }
 }
@@ -282,15 +284,18 @@ void GazeboQuadrotorSimpleController::Update()
   // Get simulator time
   common::Time sim_time = world->GetSimTime();
   double dt = (sim_time - last_time).Double();
-  if (dt == 0.0) return;
+  if (dt == 0.0)
+    return;
 
   // Get Pose/Orientation from Gazebo (if no state subscriber is active)
-  if (imu_topic_.empty()) {
+  if (imu_topic_.empty())
+  {
     pose = link->GetWorldPose();
     angular_velocity = link->GetWorldAngularVel();
     euler = pose.rot.GetAsEuler();
   }
-  if (state_topic_.empty()) {
+  if (state_topic_.empty())
+  {
     acceleration = (link->GetWorldLinearVel() - velocity) / dt;
     velocity = link->GetWorldLinearVel();
   }
@@ -309,7 +314,7 @@ void GazeboQuadrotorSimpleController::Update()
   double load_factor = gravity * gravity / world->GetPhysicsEngine()->GetGravity().Dot(gravity_body);  // Get gravity
 
   // Rotate vectors to coordinate frames relevant for control
-  math::Quaternion heading_quaternion(cos(euler.z/2),0,0,sin(euler.z/2));
+  math::Quaternion heading_quaternion(cos(euler.z / 2), 0, 0, sin(euler.z / 2));
   math::Vector3 velocity_xy = heading_quaternion.RotateVectorReverse(velocity);
   math::Vector3 acceleration_xy = heading_quaternion.RotateVectorReverse(acceleration);
   math::Vector3 angular_velocity_body = pose.rot.RotateVectorReverse(angular_velocity);
@@ -317,16 +322,20 @@ void GazeboQuadrotorSimpleController::Update()
   // update controllers
   force.Set(0.0, 0.0, 0.0);
   torque.Set(0.0, 0.0, 0.0);
-  double pitch_command =  velocity_command_.linear.x * 0.21;
-  double roll_command  = -velocity_command_.linear.y * 0.21;
-  torque.x = inertia.x *  controllers_.roll.update(roll_command, euler.x, angular_velocity_body.x, dt);
-  torque.y = inertia.y *  controllers_.pitch.update(pitch_command, euler.y, angular_velocity_body.y, dt);
+  double pitch_command = velocity_command_.linear.x * 0.21;
+  double roll_command = -velocity_command_.linear.y * 0.21;
+  torque.x = inertia.x * controllers_.roll.update(roll_command, euler.x, angular_velocity_body.x, dt);
+  torque.y = inertia.y * controllers_.pitch.update(pitch_command, euler.y, angular_velocity_body.y, dt);
   // torque.x = inertia.x *  controllers_.roll.update(-velocity_command_.linear.y/gravity, euler.x, angular_velocity_body.x, dt);
   // torque.y = inertia.y *  controllers_.pitch.update(velocity_command_.linear.x/gravity, euler.y, angular_velocity_body.y, dt);
-  torque.z = inertia.z *  controllers_.yaw.update(velocity_command_.angular.z * 1.66, angular_velocity.z, 0, dt);
-  force.z  = mass      * (controllers_.velocity_z.update(velocity_command_.linear.z,  velocity.z, acceleration.z, dt) + load_factor * gravity);
-  if (max_force_ > 0.0 && force.z > max_force_) force.z = max_force_;
-  if (force.z < 0.0) force.z = 0.0;
+  torque.z = inertia.z * controllers_.yaw.update(velocity_command_.angular.z * 1.66, angular_velocity.z, 0, dt);
+  force.z = mass
+      * (controllers_.velocity_z.update(velocity_command_.linear.z, velocity.z, acceleration.z, dt)
+          + load_factor * gravity);
+  if (max_force_ > 0.0 && force.z > max_force_)
+    force.z = max_force_;
+  if (force.z < 0.0)
+    force.z = 0.0;
 
 //  static double lastDebugOutput = 0.0;
 //  if (last_time.Double() - lastDebugOutput > 0.1) {
@@ -338,24 +347,24 @@ void GazeboQuadrotorSimpleController::Update()
 //  }
 
   // process robot state information
-  if(navi_state == LANDED_MODEL)
+  if (navi_state == LANDED_MODEL)
   {
 
   }
-  else if((navi_state == FLYING_MODEL)||(navi_state == TO_FIX_POINT_MODEL))
+  else if ((navi_state == FLYING_MODEL) || (navi_state == TO_FIX_POINT_MODEL))
   {
     link->AddRelativeForce(force);
     link->AddRelativeTorque(torque);
   }
-  else if(navi_state == TAKINGOFF_MODEL)
+  else if (navi_state == TAKINGOFF_MODEL)
   {
-    link->AddRelativeForce(force*1.5);
-    link->AddRelativeTorque(torque*1.5);
+    link->AddRelativeForce(force * 1.5);
+    link->AddRelativeTorque(torque * 1.5);
   }
-  else if(navi_state == LANDING_MODEL)
+  else if (navi_state == LANDING_MODEL)
   {
-    link->AddRelativeForce(force*0.8);
-    link->AddRelativeTorque(torque*0.8);
+    link->AddRelativeForce(force * 0.8);
+    link->AddRelativeTorque(torque * 0.8);
   }
 
   // save last time stamp
@@ -373,8 +382,8 @@ void GazeboQuadrotorSimpleController::Reset()
   controllers_.velocity_y.reset();
   controllers_.velocity_z.reset();
 
-  link->SetForce(math::Vector3(0,0,0));
-  link->SetTorque(math::Vector3(0,0,0));
+  link->SetForce(math::Vector3(0, 0, 0));
+  link->SetTorque(math::Vector3(0, 0, 0));
 
   // reset state
   pose.Reset();
@@ -403,25 +412,33 @@ void GazeboQuadrotorSimpleController::PIDController::Load(sdf::ElementPtr _sdf, 
   time_constant = 0.0;
   limit = -1.0;
 
-  if (!_sdf) return;
+  if (!_sdf)
+    return;
   // _sdf->PrintDescription(_sdf->GetName());
-  if (_sdf->HasElement(prefix + "ProportionalGain")) gain_p = _sdf->GetElement(prefix + "ProportionalGain")->Get<double>();
-  if (_sdf->HasElement(prefix + "DifferentialGain")) gain_d = _sdf->GetElement(prefix + "DifferentialGain")->Get<double>();
-  if (_sdf->HasElement(prefix + "IntegralGain"))     gain_i = _sdf->GetElement(prefix + "IntegralGain")->Get<double>();
-  if (_sdf->HasElement(prefix + "TimeConstant"))     time_constant = _sdf->GetElement(prefix + "TimeConstant")->Get<double>();
-  if (_sdf->HasElement(prefix + "Limit"))            limit = _sdf->GetElement(prefix + "Limit")->Get<double>();
+  if (_sdf->HasElement(prefix + "ProportionalGain"))
+    gain_p = _sdf->GetElement(prefix + "ProportionalGain")->Get<double>();
+  if (_sdf->HasElement(prefix + "DifferentialGain"))
+    gain_d = _sdf->GetElement(prefix + "DifferentialGain")->Get<double>();
+  if (_sdf->HasElement(prefix + "IntegralGain"))
+    gain_i = _sdf->GetElement(prefix + "IntegralGain")->Get<double>();
+  if (_sdf->HasElement(prefix + "TimeConstant"))
+    time_constant = _sdf->GetElement(prefix + "TimeConstant")->Get<double>();
+  if (_sdf->HasElement(prefix + "Limit"))
+    limit = _sdf->GetElement(prefix + "Limit")->Get<double>();
 
 }
 
 double GazeboQuadrotorSimpleController::PIDController::update(double new_input, double x, double dx, double dt)
 {
   // limit command
-  if (limit > 0.0 && fabs(new_input) > limit) new_input = (new_input < 0 ? -1.0 : 1.0) * limit;
+  if (limit > 0.0 && fabs(new_input) > limit)
+    new_input = (new_input < 0 ? -1.0 : 1.0) * limit;
 
   // filter command
-  if (dt + time_constant > 0.0) {
+  if (dt + time_constant > 0.0)
+  {
     dinput = (new_input - input) / (dt + time_constant);
-    input  = (dt * new_input + time_constant * input) / (dt + time_constant);
+    input = (dt * new_input + time_constant * input) / (dt + time_constant);
   }
 
   // update proportional, differential and integral errors
@@ -442,7 +459,7 @@ void GazeboQuadrotorSimpleController::PIDController::reset()
 
 void GazeboQuadrotorSimpleController::NavdataCallback(const ardrone_autonomy::NavdataConstPtr& msg)
 {
-  navi_state = msg -> state;
+  navi_state = msg->state;
 }
 
 // Register this plugin with the simulator

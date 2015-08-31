@@ -31,9 +31,10 @@
 #include "gazebo/physics/physics.hh"
 
 static const double DEFAULT_ELEVATION = 0.0;
-static const double DEFAULT_QNH       = 1013.25;
+static const double DEFAULT_QNH = 1013.25;
 
-namespace gazebo {
+namespace gazebo
+{
 
 GazeboRosBaro::GazeboRosBaro()
 {
@@ -66,7 +67,8 @@ void GazeboRosBaro::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     link = _model->GetLink();
     link_name_ = link->GetName();
   }
-  else {
+  else
+  {
     link_name_ = _sdf->GetElement("bodyName")->Get<std::string>();
     link = boost::dynamic_pointer_cast<physics::Link>(world->GetEntity(link_name_));
   }
@@ -78,8 +80,9 @@ void GazeboRosBaro::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   }
 
   double update_rate = 0.0;
-  if (_sdf->HasElement("updateRate")) update_rate = _sdf->GetElement("updateRate")->Get<double>();
-  update_period = update_rate > 0.0 ? 1.0/update_rate : 0.0;
+  if (_sdf->HasElement("updateRate"))
+    update_rate = _sdf->GetElement("updateRate")->Get<double>();
+  update_period = update_rate > 0.0 ? 1.0 / update_rate : 0.0;
 
   if (!_sdf->HasElement("frameId"))
     frame_id_ = link->GetName();
@@ -114,11 +117,12 @@ void GazeboRosBaro::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   {
     int argc = 0;
     char **argv = NULL;
-    ros::init(argc,argv,"gazebo",ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    ros::init(argc, argv, "gazebo", ros::init_options::NoSigintHandler | ros::init_options::AnonymousName);
   }
 
   node_handle_ = new ros::NodeHandle(namespace_);
-  if (!height_topic_.empty()) {
+  if (!height_topic_.empty())
+  {
 #ifdef USE_MAV_MSGS
     height_publisher_ = node_handle_->advertise<mav_msgs::Height>(height_topic_, 10);
 #else
@@ -126,7 +130,8 @@ void GazeboRosBaro::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 #endif
   }
 
-  if (!altimeter_topic_.empty()) {
+  if (!altimeter_topic_.empty())
+  {
     altimeter_publisher_ = node_handle_->advertise<cvg_sim_msgs::Altimeter>(altimeter_topic_, 10);
   }
 
@@ -135,8 +140,7 @@ void GazeboRosBaro::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // New Mechanism for Updating every World Cycle
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
-  updateConnection = event::Events::ConnectWorldUpdateBegin(
-      boost::bind(&GazeboRosBaro::Update, this));
+  updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&GazeboRosBaro::Update, this));
 }
 
 void GazeboRosBaro::Reset()
@@ -150,12 +154,14 @@ void GazeboRosBaro::Update()
 {
   common::Time sim_time = world->GetSimTime();
   double dt = (sim_time - last_time).Double();
-  if (last_time + update_period > sim_time) return;
+  if (last_time + update_period > sim_time)
+    return;
 
   math::Pose pose = link->GetWorldPose();
   double height = sensor_model_(pose.pos.z, dt);
 
-  if (height_publisher_) {
+  if (height_publisher_)
+  {
 #ifdef USE_MAV_MSGS
     double previous_height = height_.height;
     height_.header.stamp = ros::Time(sim_time.sec, sim_time.nsec);
@@ -171,7 +177,8 @@ void GazeboRosBaro::Update()
     height_publisher_.publish(height_);
   }
 
-  if (altimeter_publisher_) {
+  if (altimeter_publisher_)
+  {
     altimeter_.header = height_.header;
     altimeter_.altitude = height + elevation_;
     altimeter_.pressure = pow((1.0 - altimeter_.altitude / 44330.0), 5.263157) * qnh_;

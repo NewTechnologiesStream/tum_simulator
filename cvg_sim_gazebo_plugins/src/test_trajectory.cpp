@@ -26,7 +26,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //=================================================================================================
 
-
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 

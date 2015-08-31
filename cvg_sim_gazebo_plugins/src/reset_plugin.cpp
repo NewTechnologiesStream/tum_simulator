@@ -31,7 +31,8 @@
 
 #include <std_msgs/String.h>
 
-namespace gazebo {
+namespace gazebo
+{
 
 GazeboResetPlugin::GazeboResetPlugin()
 {
@@ -53,7 +54,7 @@ void GazeboResetPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   {
     int argc = 0;
     char** argv = NULL;
-    ros::init(argc,argv, "gazebo", ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    ros::init(argc, argv, "gazebo", ros::init_options::NoSigintHandler | ros::init_options::AnonymousName);
   }
 
   node_handle_ = new ros::NodeHandle;

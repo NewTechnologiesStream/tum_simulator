@@ -1,15 +1,15 @@
 /*
-* quadrotor_state_controller:
-*
-* This software is a state control gazebo plugin for the Ardrone simulator
-*
-* It receives the joystick command and the current simulator information to generate corresponding information in rostopic /ardrone/navdata
-*
-* Created on: Oct 22, 2012
-* Author: Hongrong huang
-*
-*
-*/
+ * quadrotor_state_controller:
+ *
+ * This software is a state control gazebo plugin for the Ardrone simulator
+ *
+ * It receives the joystick command and the current simulator information to generate corresponding information in rostopic /ardrone/navdata
+ *
+ * Created on: Oct 22, 2012
+ * Author: Hongrong huang
+ *
+ *
+ */
 
 #ifndef HECTOR_GAZEBO_PLUGINS_quadrotor_state_controller_H
 #define HECTOR_GAZEBO_PLUGINS_quadrotor_state_controller_H
@@ -45,7 +45,6 @@
 #define TO_FIX_POINT_MODEL  7
 #define LANDING_MODEL       8
 #define LOOPING_MODEL       9
-
 
 namespace gazebo
 {
@@ -83,18 +82,18 @@ private:
   ros::Publisher m_navdataPub;
 
   // extra camera control command
-  int                              m_selected_cam_num;
-  ros::ServiceServer               toggleCam_service;
-  ros::Subscriber                  camera_info_front_subscriber_;
-  ros::Subscriber                  camera_info_bottom_subscriber_;
-  ros::Publisher                   camera_info_publisher_;
+  int m_selected_cam_num;
+  ros::ServiceServer toggleCam_service;
+  ros::Subscriber camera_info_front_subscriber_;
+  ros::Subscriber camera_info_bottom_subscriber_;
+  ros::Publisher camera_info_publisher_;
   image_transport::ImageTransport* camera_it_;
-  image_transport::Subscriber      camera_front_subscriber_;
-  image_transport::Subscriber      camera_bottom_subscriber_;
-  image_transport::Publisher       camera_publisher_;
+  image_transport::Subscriber camera_front_subscriber_;
+  image_transport::Subscriber camera_bottom_subscriber_;
+  image_transport::Publisher camera_publisher_;
 
   //***********************************
-  
+
   // void CallbackQueueThread();
   // boost::mutex lock_;
   // boost::thread callback_queue_thread_;
@@ -114,10 +113,12 @@ private:
   void CameraInfoBottomCallback(const sensor_msgs::CameraInfoConstPtr&);
 
   // service functions
-  bool setCamChannelCallback(ardrone_autonomy::CamSelect::Request& request, ardrone_autonomy::CamSelect::Response& response);
+  bool setCamChannelCallback(ardrone_autonomy::CamSelect::Request& request,
+                             ardrone_autonomy::CamSelect::Response& response);
   bool toggleCamCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
   bool toggleNavdataDemoCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
-  bool setLedAnimationCallback(ardrone_autonomy::LedAnim::Request& request, ardrone_autonomy::LedAnim::Response& response);
+  bool setLedAnimationCallback(ardrone_autonomy::LedAnim::Request& request,
+                               ardrone_autonomy::LedAnim::Response& response);
 
   ros::Time state_stamp;
   math::Pose pose;

@@ -34,9 +34,9 @@
 
 #include <ros/ros.h>
 #ifdef USE_MAV_MSGS
-  #include <mav_msgs/Height.h>
+#include <mav_msgs/Height.h>
 #else
-  #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PointStamped.h>
 #endif
 #include <cvg_sim_msgs/Altimeter.h>
 

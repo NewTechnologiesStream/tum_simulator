@@ -33,7 +33,8 @@
 
 #include <limits>
 
-namespace gazebo {
+namespace gazebo
+{
 
 GazeboRosSonar::GazeboRosSonar()
 {
@@ -85,7 +86,8 @@ void GazeboRosSonar::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
 
   range_.header.frame_id = frame_id_;
   range_.radiation_type = sensor_msgs::Range::ULTRASOUND;
-  range_.field_of_view = std::min(fabs((sensor_->GetAngleMax() - sensor_->GetAngleMin()).Radian()), fabs((sensor_->GetVerticalAngleMax() - sensor_->GetVerticalAngleMin()).Radian()));
+  range_.field_of_view = std::min(fabs((sensor_->GetAngleMax() - sensor_->GetAngleMin()).Radian()),
+                                  fabs((sensor_->GetVerticalAngleMax() - sensor_->GetVerticalAngleMin()).Radian()));
   range_.max_range = sensor_->GetRangeMax();
   range_.min_range = sensor_->GetRangeMin();
 
@@ -94,15 +96,14 @@ void GazeboRosSonar::Load(sensors::SensorPtr _sensor, sdf::ElementPtr _sdf)
   {
     int argc = 0;
     char** argv = NULL;
-    ros::init(argc,argv,"gazebo",ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    ros::init(argc, argv, "gazebo", ros::init_options::NoSigintHandler | ros::init_options::AnonymousName);
   }
 
   node_handle_ = new ros::NodeHandle(namespace_);
   publisher_ = node_handle_->advertise<sensor_msgs::Range>(topic_, 1);
 
   Reset();
-  updateConnection = sensor_->GetLaserShape()->ConnectNewLaserScans(
-        boost::bind(&GazeboRosSonar::Update, this));
+  updateConnection = sensor_->GetLaserShape()->ConnectNewLaserScans(boost::bind(&GazeboRosSonar::Update, this));
 
   // activate RaySensor
   sensor_->SetActive(true);
@@ -121,25 +122,31 @@ void GazeboRosSonar::Update()
   double dt = (sim_time - last_time).Double();
 //  if (last_time + updatePeriod > sim_time) return;
 
-  // activate RaySensor if it is not yet active
-  if (!sensor_->IsActive()) sensor_->SetActive(true);
+// activate RaySensor if it is not yet active
+  if (!sensor_->IsActive())
+    sensor_->SetActive(true);
 
-  range_.header.stamp.sec  = (world->GetSimTime()).sec;
+  range_.header.stamp.sec = (world->GetSimTime()).sec;
   range_.header.stamp.nsec = (world->GetSimTime()).nsec;
 
   // find ray with minimal range
   range_.range = std::numeric_limits<sensor_msgs::Range::_range_type>::max();
   int num_ranges = sensor_->GetLaserShape()->GetSampleCount() * sensor_->GetLaserShape()->GetVerticalSampleCount();
-  for(int i = 0; i < num_ranges; ++i) {
+  for (int i = 0; i < num_ranges; ++i)
+  {
     double ray = sensor_->GetLaserShape()->GetRange(i);
-    if (ray < range_.range) range_.range = ray;
+    if (ray < range_.range)
+      range_.range = ray;
   }
 
   // add Gaussian noise (and limit to min/max range)
-  if (range_.range < range_.max_range) {
+  if (range_.range < range_.max_range)
+  {
     range_.range += sensor_model_.update(dt);
-    if (range_.range < range_.min_range) range_.range = range_.min_range;
-    if (range_.range > range_.max_range) range_.range = range_.max_range;
+    if (range_.range < range_.min_range)
+      range_.range = range_.min_range;
+    if (range_.range > range_.max_range)
+      range_.range = range_.max_range;
   }
 
   publisher_.publish(range_);

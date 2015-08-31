@@ -31,12 +31,13 @@
 #include "gazebo/physics/physics.hh"
 
 static const double EARTH_RADIUS = 6371000.0;
-static const double DEFAULT_REFERENCE_LATITUDE  = 49.9;
+static const double DEFAULT_REFERENCE_LATITUDE = 49.9;
 static const double DEFAULT_REFERENCE_LONGITUDE = 8.9;
-static const double DEFAULT_REFERENCE_HEADING   = 0.0;
-static const double DEFAULT_REFERENCE_ALTITUDE  = 0.0;
+static const double DEFAULT_REFERENCE_HEADING = 0.0;
+static const double DEFAULT_REFERENCE_ALTITUDE = 0.0;
 
-namespace gazebo {
+namespace gazebo
+{
 
 GazeboRosGps::GazeboRosGps()
 {
@@ -68,7 +69,8 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     link = _model->GetLink();
     link_name_ = link->GetName();
   }
-  else {
+  else
+  {
     link_name_ = _sdf->GetElement("bodyName")->Get<std::string>();
     link = boost::dynamic_pointer_cast<physics::Link>(world->GetEntity(link_name_));
   }
@@ -80,8 +82,9 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   }
 
   double update_rate = 4.0;
-  if (_sdf->HasElement("updateRate")) update_rate = _sdf->GetElement("updateRate")->Get<double>();
-  update_period = update_rate > 0.0 ? 1.0/update_rate : 0.0;
+  if (_sdf->HasElement("updateRate"))
+    update_rate = _sdf->GetElement("updateRate")->Get<double>();
+  update_period = update_rate > 0.0 ? 1.0 / update_rate : 0.0;
 
   if (!_sdf->HasElement("frameId"))
     frame_id_ = link_name_;
@@ -109,9 +112,9 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     reference_longitude_ = _sdf->GetElement("referenceLongitude")->Get<double>();
 
   if (!_sdf->HasElement("referenceHeading"))
-    reference_heading_ = DEFAULT_REFERENCE_HEADING * M_PI/180.0;
+    reference_heading_ = DEFAULT_REFERENCE_HEADING * M_PI / 180.0;
   else
-    reference_heading_ = _sdf->GetElement("referenceLatitude")->Get<double>() * M_PI/180.0;
+    reference_heading_ = _sdf->GetElement("referenceLatitude")->Get<double>() * M_PI / 180.0;
 
   if (!_sdf->HasElement("referenceAltitude"))
     reference_altitude_ = DEFAULT_REFERENCE_ALTITUDE;
@@ -129,7 +132,7 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     service_ = _sdf->GetElement("service")->Get<unsigned int>();
 
   fix_.header.frame_id = frame_id_;
-  fix_.status.status  = status_;
+  fix_.status.status = status_;
   fix_.status.service = service_;
   velocity_.header.frame_id = frame_id_;
 
@@ -141,7 +144,7 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   {
     int argc = 0;
     char** argv = NULL;
-    ros::init(argc,argv,"gazebo",ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    ros::init(argc, argv, "gazebo", ros::init_options::NoSigintHandler | ros::init_options::AnonymousName);
   }
 
   node_handle_ = new ros::NodeHandle(namespace_);
@@ -153,8 +156,7 @@ void GazeboRosGps::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // New Mechanism for Updating every World Cycle
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
-  updateConnection = event::Events::ConnectWorldUpdateBegin(
-      boost::bind(&GazeboRosGps::Update, this));
+  updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&GazeboRosGps::Update, this));
 }
 
 void GazeboRosGps::Reset()
@@ -171,22 +173,27 @@ void GazeboRosGps::Update()
 {
   common::Time sim_time = world->GetSimTime();
   double dt = (sim_time - last_time).Double();
-  if (last_time + update_period > sim_time) return;
+  if (last_time + update_period > sim_time)
+    return;
 
   math::Pose pose = link->GetWorldPose();
 
   gazebo::math::Vector3 velocity = velocity_error_model_(link->GetWorldLinearVel(), dt);
-  position_error_model_.setCurrentDrift(position_error_model_.getCurrentDrift() + velocity_error_model_.getCurrentError() * dt);
+  position_error_model_.setCurrentDrift(
+      position_error_model_.getCurrentDrift() + velocity_error_model_.getCurrentError() * dt);
   gazebo::math::Vector3 position = position_error_model_(pose.pos, dt);
 
   fix_.header.stamp = ros::Time(sim_time.sec, sim_time.nsec);
   velocity_.header.stamp = fix_.header.stamp;
 
-  fix_.latitude  = reference_latitude_  + ( cos(reference_heading_) * position.x + sin(reference_heading_) * position.y) / EARTH_RADIUS * 180.0/M_PI;
-  fix_.longitude = reference_longitude_ - (-sin(reference_heading_) * position.x + cos(reference_heading_) * position.y) / EARTH_RADIUS * 180.0/M_PI * cos(fix_.latitude);
-  fix_.altitude  = reference_altitude_  + position.z;
+  fix_.latitude = reference_latitude_
+      + (cos(reference_heading_) * position.x + sin(reference_heading_) * position.y) / EARTH_RADIUS * 180.0 / M_PI;
+  fix_.longitude = reference_longitude_
+      - (-sin(reference_heading_) * position.x + cos(reference_heading_) * position.y) / EARTH_RADIUS * 180.0 / M_PI
+          * cos(fix_.latitude);
+  fix_.altitude = reference_altitude_ + position.z;
   fix_.position_covariance_type = sensor_msgs::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
-  velocity_.vector.x =  cos(reference_heading_) * velocity.x + sin(reference_heading_) * velocity.y;
+  velocity_.vector.x = cos(reference_heading_) * velocity.x + sin(reference_heading_) * velocity.y;
   velocity_.vector.y = -sin(reference_heading_) * velocity.x + cos(reference_heading_) * velocity.y;
   velocity_.vector.z = velocity.z;
 

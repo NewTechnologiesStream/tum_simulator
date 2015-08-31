@@ -44,17 +44,12 @@
 #include <nav_msgs/Odometry.h>
 #include <boost/bind.hpp>
 
-namespace gazebo {
+namespace gazebo
+{
 
 enum
 {
-  FRONT_LEFT,
-  FRONT_RIGHT,
-  MID_LEFT,
-  MID_RIGHT,
-  REAR_LEFT,
-  REAR_RIGHT,
-  NUM_WHEELS
+  FRONT_LEFT, FRONT_RIGHT, MID_LEFT, MID_RIGHT, REAR_LEFT, REAR_RIGHT, NUM_WHEELS
 };
 
 // Constructor
@@ -93,9 +88,11 @@ void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     link = _model->GetLink();
     linkName = link->GetName();
   }
-  else {
+  else
+  {
     linkName = _sdf->GetElement("bodyName")->Get<std::string>();
-    link = boost::dynamic_pointer_cast<physics::Link>(world->GetEntity(_sdf->GetElement("bodyName")->Get<std::string>()));
+    link = boost::dynamic_pointer_cast<physics::Link>(
+        world->GetEntity(_sdf->GetElement("bodyName")->Get<std::string>()));
   }
 
   // assert that the body by linkName exists
@@ -105,19 +102,31 @@ void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
     return;
   }
 
-  if (_sdf->HasElement("frontLeftJoint"))  joints[FRONT_LEFT]  = _model->GetJoint(_sdf->GetElement("frontLeftJoint")->Get<std::string>());
-  if (_sdf->HasElement("frontRightJoint")) joints[FRONT_RIGHT] = _model->GetJoint(_sdf->GetElement("frontRightJoint")->Get<std::string>());
-  if (_sdf->HasElement("midLeftJoint"))    joints[MID_LEFT]    = _model->GetJoint(_sdf->GetElement("midLeftJoint")->Get<std::string>());
-  if (_sdf->HasElement("midRightJoint"))   joints[MID_RIGHT]   = _model->GetJoint(_sdf->GetElement("midRightJoint")->Get<std::string>());
-  if (_sdf->HasElement("rearLeftJoint"))   joints[REAR_LEFT]   = _model->GetJoint(_sdf->GetElement("rearLeftJoint")->Get<std::string>());
-  if (_sdf->HasElement("rearRightJoint"))  joints[REAR_RIGHT]  = _model->GetJoint(_sdf->GetElement("rearRightJoint")->Get<std::string>());
+  if (_sdf->HasElement("frontLeftJoint"))
+    joints[FRONT_LEFT] = _model->GetJoint(_sdf->GetElement("frontLeftJoint")->Get<std::string>());
+  if (_sdf->HasElement("frontRightJoint"))
+    joints[FRONT_RIGHT] = _model->GetJoint(_sdf->GetElement("frontRightJoint")->Get<std::string>());
+  if (_sdf->HasElement("midLeftJoint"))
+    joints[MID_LEFT] = _model->GetJoint(_sdf->GetElement("midLeftJoint")->Get<std::string>());
+  if (_sdf->HasElement("midRightJoint"))
+    joints[MID_RIGHT] = _model->GetJoint(_sdf->GetElement("midRightJoint")->Get<std::string>());
+  if (_sdf->HasElement("rearLeftJoint"))
+    joints[REAR_LEFT] = _model->GetJoint(_sdf->GetElement("rearLeftJoint")->Get<std::string>());
+  if (_sdf->HasElement("rearRightJoint"))
+    joints[REAR_RIGHT] = _model->GetJoint(_sdf->GetElement("rearRightJoint")->Get<std::string>());
 
-  if (!joints[FRONT_LEFT])  ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front left joint");
-  if (!joints[FRONT_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front right joint");
-  if (!joints[MID_LEFT])    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid left joint");
-  if (!joints[MID_RIGHT])   ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid right joint");
-  if (!joints[REAR_LEFT])   ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear left joint");
-  if (!joints[REAR_RIGHT])  ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear right joint");
+  if (!joints[FRONT_LEFT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front left joint");
+  if (!joints[FRONT_RIGHT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front right joint");
+  if (!joints[MID_LEFT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid left joint");
+  if (!joints[MID_RIGHT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid right joint");
+  if (!joints[REAR_LEFT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear left joint");
+  if (!joints[REAR_RIGHT])
+    ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear right joint");
 
   if (!_sdf->HasElement("wheelSeparation"))
     wheelSep = 0.34;
@@ -139,7 +148,7 @@ void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   {
     int argc = 0;
     char** argv = NULL;
-    ros::init(argc,argv,"gazebo",ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    ros::init(argc, argv, "gazebo", ros::init_options::NoSigintHandler | ros::init_options::AnonymousName);
   }
 
   rosnode_ = new ros::NodeHandle(robotNamespace);
@@ -148,10 +157,8 @@ void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   transform_broadcaster_ = new tf::TransformBroadcaster();
 
   // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
-  ros::SubscribeOptions so =
-      ros::SubscribeOptions::create<geometry_msgs::Twist>(topicName, 1,
-                                                          boost::bind(&DiffDrivePlugin6W::cmdVelCallback, this, _1),
-                                                          ros::VoidPtr(), &queue_);
+  ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
+      topicName, 1, boost::bind(&DiffDrivePlugin6W::cmdVelCallback, this, _1), ros::VoidPtr(), &queue_);
   sub_ = rosnode_->subscribe(so);
   pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
 
@@ -162,8 +169,7 @@ void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
   // New Mechanism for Updating every World Cycle
   // Listen to the update event. This event is broadcast every
   // simulation iteration.
-  updateConnection = event::Events::ConnectWorldUpdateBegin(
-      boost::bind(&DiffDrivePlugin6W::Update, this));
+  updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&DiffDrivePlugin6W::Update, this));
 }
 
 // Initialize the controller
@@ -171,7 +177,8 @@ void DiffDrivePlugin6W::Reset()
 {
   enableMotors = true;
 
-  for (size_t i = 0; i < 2; ++i){
+  for (size_t i = 0; i < 2; ++i)
+  {
     wheelSpeed[i] = 0;
   }
 
@@ -298,7 +305,7 @@ void DiffDrivePlugin6W::QueueThread()
 void DiffDrivePlugin6W::publish_odometry()
 {
   // get current time
-  ros::Time current_time_((world->GetSimTime()).sec, (world->GetSimTime()).nsec); 
+  ros::Time current_time_((world->GetSimTime()).sec, (world->GetSimTime()).nsec);
 
   // getting data for base_footprint to odom transform
   math::Pose pose = link->GetWorldPose();
@@ -309,10 +316,8 @@ void DiffDrivePlugin6W::publish_odometry()
   tf::Vector3 vt(pose.pos.x, pose.pos.y, pose.pos.z);
   tf::Transform base_footprint_to_odom(qt, vt);
 
-  transform_broadcaster_->sendTransform(tf::StampedTransform(base_footprint_to_odom,
-                                                            current_time_,
-                                                            "odom",
-                                                            "base_footprint"));
+  transform_broadcaster_->sendTransform(
+      tf::StampedTransform(base_footprint_to_odom, current_time_, "odom", "base_footprint"));
 
   // publish odom topic
   odom_.pose.pose.position.x = pose.pos.x;

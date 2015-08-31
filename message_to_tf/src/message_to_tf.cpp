@@ -17,7 +17,7 @@ tf::TransformBroadcaster *br;
 
 void addTransform(std::vector<geometry_msgs::TransformStamped>& transforms, const tf::StampedTransform& tf)
 {
-  transforms.resize(transforms.size()+1);
+  transforms.resize(transforms.size() + 1);
   tf::transformStampedTFToMsg(tf, transforms.back());
 }
 
@@ -27,10 +27,13 @@ void sendTransform(geometry_msgs::Pose const &pose, const std_msgs::Header& head
 
   tf::StampedTransform tf;
   tf.frame_id_ = header.frame_id;
-  if (!g_frame_id.empty()) tf.frame_id_ = g_frame_id;
+  if (!g_frame_id.empty())
+    tf.frame_id_ = g_frame_id;
   tf.stamp_ = header.stamp;
-  if (!g_child_frame_id.empty()) child_frame_id = g_child_frame_id;
-  if (child_frame_id.empty()) child_frame_id = "base_link";
+  if (!g_child_frame_id.empty())
+    child_frame_id = g_child_frame_id;
+  if (child_frame_id.empty())
+    child_frame_id = "base_link";
 
   tf::Quaternion orientation;
   tf::quaternionMsgToTF(pose.orientation, orientation);
@@ -40,15 +43,17 @@ void sendTransform(geometry_msgs::Pose const &pose, const std_msgs::Header& head
   tf::pointMsgToTF(pose.position, position);
 
   // position intermediate transform (x,y,z)
-  if( !g_position_frame_id.empty() && child_frame_id != g_position_frame_id) {
+  if (!g_position_frame_id.empty() && child_frame_id != g_position_frame_id)
+  {
     tf.child_frame_id_ = g_position_frame_id;
-    tf.setOrigin(tf::Vector3(position.x(), position.y(), position.z() ));
+    tf.setOrigin(tf::Vector3(position.x(), position.y(), position.z()));
     tf.setRotation(tf::Quaternion(0.0, 0.0, 0.0, 1.0));
     addTransform(transforms, tf);
   }
 
   // footprint intermediate transform (x,y,yaw)
-  if (!g_footprint_frame_id.empty() && child_frame_id != g_footprint_frame_id) {
+  if (!g_footprint_frame_id.empty() && child_frame_id != g_footprint_frame_id)
+  {
     tf.child_frame_id_ = g_footprint_frame_id;
     tf.setOrigin(tf::Vector3(position.x(), position.y(), 0.0));
     tf.setRotation(tf::createQuaternionFromRPY(0.0, 0.0, yaw));
@@ -61,7 +66,8 @@ void sendTransform(geometry_msgs::Pose const &pose, const std_msgs::Header& head
   }
 
   // stabilized intermediate transform (z)
-  if (!g_footprint_frame_id.empty() && child_frame_id != g_stabilized_frame_id) {
+  if (!g_footprint_frame_id.empty() && child_frame_id != g_stabilized_frame_id)
+  {
     tf.child_frame_id_ = g_stabilized_frame_id;
     tf.setOrigin(tf::Vector3(0.0, 0.0, position.z()));
     tf.setBasis(tf::Matrix3x3::getIdentity());
@@ -80,23 +86,28 @@ void sendTransform(geometry_msgs::Pose const &pose, const std_msgs::Header& head
   br->sendTransform(transforms);
 }
 
-void odomCallback(nav_msgs::Odometry const &odometry) {
+void odomCallback(nav_msgs::Odometry const &odometry)
+{
   sendTransform(odometry.pose.pose, odometry.header, odometry.child_frame_id);
 }
 
-void poseCallback(geometry_msgs::PoseStamped const &pose) {
+void poseCallback(geometry_msgs::PoseStamped const &pose)
+{
   sendTransform(pose.pose, pose.header);
 }
 
-void imuCallback(sensor_msgs::Imu const &imu) {
+void imuCallback(sensor_msgs::Imu const &imu)
+{
   std::vector<geometry_msgs::TransformStamped> transforms;
   std::string child_frame_id;
 
   tf::StampedTransform tf;
   tf.frame_id_ = g_stabilized_frame_id;
   tf.stamp_ = imu.header.stamp;
-  if (!g_child_frame_id.empty()) child_frame_id = g_child_frame_id;
-  if (child_frame_id.empty()) child_frame_id = "base_link";
+  if (!g_child_frame_id.empty())
+    child_frame_id = g_child_frame_id;
+  if (child_frame_id.empty())
+    child_frame_id = "base_link";
 
   tf::Quaternion orientation;
   tf::quaternionMsgToTF(imu.orientation, orientation);
@@ -111,7 +122,8 @@ void imuCallback(sensor_msgs::Imu const &imu) {
   br->sendTransform(transforms);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   ros::init(argc, argv, "message_to_tf");
 
   g_footprint_frame_id = "base_footprint";
@@ -132,11 +144,15 @@ int main(int argc, char** argv) {
 
   ros::NodeHandle node;
   ros::Subscriber sub1, sub2, sub3;
-  if (!g_odometry_topic.empty()) sub1 = node.subscribe(g_odometry_topic, 10, &odomCallback);
-  if (!g_pose_topic.empty())     sub2 = node.subscribe(g_pose_topic, 10, &poseCallback);
-  if (!g_imu_topic.empty())      sub3 = node.subscribe(g_imu_topic, 10, &imuCallback);
+  if (!g_odometry_topic.empty())
+    sub1 = node.subscribe(g_odometry_topic, 10, &odomCallback);
+  if (!g_pose_topic.empty())
+    sub2 = node.subscribe(g_pose_topic, 10, &poseCallback);
+  if (!g_imu_topic.empty())
+    sub3 = node.subscribe(g_imu_topic, 10, &imuCallback);
 
-  if (!sub1 && !sub2 && !sub3) {
+  if (!sub1 && !sub2 && !sub3)
+  {
     ROS_FATAL("Params odometry_topic, pose_topic and imu_topic are empty... nothing to do for me!");
     return 1;
   }
